@@ -34,7 +34,7 @@ function showView(view){
  try{const url=new URL(window.location.href);if(view==='home')url.searchParams.delete('view');else url.searchParams.set('view',view);if(focusMode)url.searchParams.set('mode','focus');else url.searchParams.delete('mode');window.history.replaceState(null,'',url.href);}catch(e){}
  const home=view==='home',tabata=view==='tabata-a'||view==='tabata-b';
  sections.forEach(section=>{section.hidden=home?section.id!=='weekly':section.id!==view&&!(tabata&&focusMode&&section.id==='timer');});
- document.body.classList.toggle('view-active',!home);el('home-links').hidden=!home;el('day-controls').hidden=home;
+ document.body.classList.toggle('view-active',!home);el('home-links').hidden=!home;el('day-controls').hidden=home;if(home)updateToday();
  el('focus-toggle').hidden=!tabata;el('focus-toggle').textContent=focusMode?'ดูรายละเอียดท่า':'เริ่มโหมดฝึก';
  document.body.classList.toggle('focus-active',tabata&&focusMode);el('focus-exercise').hidden=!(tabata&&focusMode);
  if(tabata&&focusMode)el(view).hidden=true;
@@ -48,6 +48,11 @@ function openDay(index){
  }
  selectedDay=view;focusMode=false;lastFocusKey='';showView(view);window.scrollTo({top:0,behavior:'smooth'});
 }
+const todayNames=['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
+function updateToday(){const day=new Date().getDay();const activities=['พักฟื้น','Tabata A','Full-body','เดินลู่','Tabata B','Full-body','เดินลู่'];const durations=['พัก','20–25 นาที','35–45 นาที','25–35 นาที','20–25 นาที','35–45 นาที','30–40 นาที'];el('today-label').textContent='วันนี้ · '+todayNames[day].replace('วัน','')+' — '+activities[day]+' · '+durations[day];el('today-action').hidden=false;document.querySelectorAll('#weekly .week-row').forEach((row,index)=>{const today=index===(day+6)%7;row.classList.toggle('is-today',today);row.querySelector('.today-badge').hidden=!today;});}
+el('today-button').addEventListener('click',()=>openDay((new Date().getDay()+6)%7));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateToday();});
+updateToday();
 document.querySelectorAll('#weekly .week-row').forEach((link,index)=>link.addEventListener('click',event=>{event.preventDefault();openDay(index);}));
 function canLeaveFocus(){if(focusMode&&running){window.alert('กรุณาหยุดจับเวลาหรือฝึกให้เสร็จก่อนออกจากโหมดฝึก');return false;}return true;}
 el('back-to-week').addEventListener('click',()=>{if(!canLeaveFocus())return;selectedDay=null;focusMode=false;showView('home');window.scrollTo({top:0,behavior:'smooth'});});
