@@ -2,17 +2,24 @@
 'use strict';
 
 const el=id=>document.getElementById(id);
-const controls={start:el('kb-start'),pause:el('kb-pause'),reset:el('kb-reset'),rounds:el('guide-rounds')};
+const controls={start:el('kb-start'),pause:el('kb-pause'),reset:el('kb-reset'),rounds:el('guide-rounds'),week:el('guide-week')};
 const strength=[['db-1',2],['db-2',2],['db-3',2,true],['db-4',2],['db-5',2]];
+const walkMinutes={'walk-light':[15,20,25,30],walk:[25,30,35,40]};
+const savedWeek=new URLSearchParams(window.location.search).get('week');
+let week=['1','2','3','4'].includes(savedWeek)?savedWeek:'1';
+controls.week.value=week;
 let workout='',stages=[],index=0,remaining=0,running=false,completed=false;
 let deadline=0,interval=null,audio=null,lastSecond=null,pauseReason='',displayedCard=null;
 
 function buildStages(){
- if(workout==='walk')return [
-  {label:'วอร์มอัป',duration:300,name:'เดินลู่ · 2.5–3.0 km/h'},
-  {label:'เดินช่วงหลัก',duration:1200,name:'เดินลู่ · เริ่มที่ 3.5 km/h'},
-  {label:'คูลดาวน์',duration:300,name:'เดินลู่ · 2.5–3.0 km/h'}
- ];
+ if(walkMinutes[workout]){
+  const total=walkMinutes[workout][Number(week)-1];
+  return [
+   {label:'วอร์มอัป',duration:300,name:'เดินสบาย ๆ · ความชัน 0%'},
+   {label:'เดินช่วงหลัก',duration:(total-10)*60,name:workout==='walk'?'เดินลู่ปานกลาง':'เดินลู่เบา',detail:workout==='walk'?'หายใจเร็วขึ้นและยังพูดเป็นประโยคได้':'เดินในจังหวะที่ยังคุยได้สบาย'},
+   {label:'คูลดาวน์',duration:300,name:'ผ่อนความเร็วลง'}
+  ];
+ }
  if(workout==='tabata'){
   const queue=[{label:'เตรียมตัว',duration:10,card:'cardio-1'}];
   const rounds=Number(controls.rounds.value);
@@ -67,14 +74,15 @@ function render(){
  const minutes=Math.floor(seconds/60);
  el('kb-time').textContent=completed?'✓':minutes?minutes+':'+String(seconds%60).padStart(2,'0'):String(seconds);
  el('kb-stage').textContent=completed
-  ?workout==='walk'?'เดินครบตามโปรแกรม':'คูลดาวน์ '+(workout==='tabata'?'5':'3–5')+' นาที'
-  :stage.detail||(index===0&&workout!=='walk'?'วอร์มอัป 5 นาทีก่อนกดเริ่ม':'');
+  ?walkMinutes[workout]?'เดินครบตามโปรแกรม':'คูลดาวน์ '+(workout==='tabata'?'5':'3–5')+' นาที'
+  :stage.detail||(index===0&&!walkMinutes[workout]?'วอร์มอัป 5 นาทีก่อนกดเริ่ม':'');
  el('kb-status').textContent=pauseReason;
  el('kb-status').hidden=!pauseReason;
  el('kb-progress').style.width=(completed?100:100*(1-remaining/stage.duration))+'%';
  controls.start.disabled=running||completed;
  controls.pause.disabled=!running;
  controls.rounds.disabled=running;
+ controls.week.disabled=running;
  controls.start.textContent=index||remaining<stages[0].duration?'▶ ทำต่อ':'▶ เริ่ม';
 }
 
@@ -110,7 +118,7 @@ function tick(){
  }
  remaining=(deadline-now)/1000;
  const second=Math.ceil(remaining);
- if(index!==previous)beep(stages[index].work||workout==='walk'?880:520,.25);
+ if(index!==previous)beep(stages[index].work||walkMinutes[workout]?880:520,.25);
  else if(second<=3&&second!==lastSecond)beep(700,.1);
  lastSecond=second;
  render();
@@ -147,6 +155,10 @@ function reset(){
  clearInterval(interval);
  interval=null;
  stages=buildStages();
+ if(walkMinutes[workout]){
+  const total=walkMinutes[workout][Number(week)-1];
+  el('guide-walk-total').textContent='รวม '+total+' นาที · วอร์ม 5 + เดิน '+(total-10)+' + คูลดาวน์ 5';
+ }
  index=0;
  remaining=stages[0].duration;
  running=false;
@@ -159,11 +171,25 @@ document.addEventListener('guide-workout',event=>{
  if(workout===event.detail)return;
  workout=event.detail;
  el('guide-round-options').hidden=workout!=='tabata';
+ el('guide-week-options').hidden=!walkMinutes[workout];
  reset();
 });
 controls.start.addEventListener('click',start);
 controls.pause.addEventListener('click',()=>pause('หยุดชั่วคราว'));
 controls.reset.addEventListener('click',reset);
+controls.week.addEventListener('change',()=>{
+ if(!completed&&(index||remaining<stages[0].duration)&&!window.confirm('เปลี่ยนสัปดาห์และเริ่มจับเวลาใหม่หรือไม่?')){
+  controls.week.value=week;
+  return;
+ }
+ week=controls.week.value;
+ try{
+  const url=new URL(window.location.href);
+  url.searchParams.set('week',week);
+  window.history.replaceState(null,'',url.href);
+ }catch(e){}
+ reset();
+});
 controls.rounds.addEventListener('change',()=>{
  if(!completed&&(index||remaining<stages[0].duration)&&!window.confirm('เปลี่ยนจำนวนรอบและเริ่มจับเวลาใหม่หรือไม่?')){
   controls.rounds.value=stages.filter(stage=>stage.label==='พักระหว่างรอบ').length+1;

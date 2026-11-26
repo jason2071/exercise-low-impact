@@ -1,9 +1,9 @@
 (function(){'use strict';
 const el=id=>document.getElementById(id);
 const todayNames=['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
-const activities=['พักฟื้น','เวททั้งตัว','พักฟื้น','เดินลู่','เวททั้งตัว','พักฟื้น','เดินลู่'];
-const durations=['พัก','26–28 นาที','พัก','25–35 นาที','26–28 นาที','พัก','25–35 นาที'];
-const daySections=['dumbbell','recovery','cardio','dumbbell','recovery','cardio','recovery'];
+const activities=['พักฟื้น','เวททั้งตัว','เดินลู่เบา','เดินลู่ปานกลาง','เวททั้งตัว','เดินลู่เบา','เดินลู่ปานกลาง'];
+const durations=['พัก','26–28 นาที','15–30 นาที','25–40 นาที','26–28 นาที','15–30 นาที','25–40 นาที'];
+const daySections=['dumbbell','walk-light','cardio','dumbbell','walk-light','cardio','recovery'];
 const sections=[...document.querySelectorAll('main > section')];
 const rows=[...document.querySelectorAll('#weekly .week-row')];
 const viewIds=new Set(sections.map(section=>section.id));
@@ -31,7 +31,7 @@ function showView(view, workout=''){
  }
  currentView=view;
  const strengthDay=view==='dumbbell';
- focusMode=(strengthDay&&workout===view)||(view==='cardio'&&(workout==='walk'||workout==='tabata'));
+ focusMode=((strengthDay||view==='walk-light')&&workout===view)||(view==='cardio'&&(workout==='walk'||workout==='tabata'));
  try{
   const url=new URL(window.location.href);
   if(view==='home')url.searchParams.delete('view');else url.searchParams.set('view',view);
@@ -59,7 +59,7 @@ rows.forEach((link,index)=>link.addEventListener('click',event=>{event.preventDe
 el('back-to-week').addEventListener('click',()=>showView('home'));
 el('kb-focus-toggle').addEventListener('click',()=>showView(currentView,focusMode?'':currentView));
 document.querySelectorAll('[data-workout]').forEach(button=>{
- button.addEventListener('click',()=>showView('cardio',button.dataset.workout));
+ button.addEventListener('click',()=>showView(button.dataset.workout==='walk-light'?'walk-light':'cardio',button.dataset.workout));
 });
 document.querySelectorAll('[data-info]').forEach(button=>button.addEventListener('click',()=>showView(button.dataset.info)));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateToday();});
