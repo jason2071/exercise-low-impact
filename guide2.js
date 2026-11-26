@@ -2,11 +2,14 @@
 const el=id=>document.getElementById(id);
 const todayNames=['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
 const activities=['พักฟื้น','Kettlebell','Dumbbell','Cardio','Kettlebell','Dumbbell','Cardio'];
-const durations=['พัก','25–30 นาที','30–40 นาที','20–35 นาที','25–30 นาที','30–40 นาที','20–35 นาที'];
+const durations=['พัก','24–26 นาที','30–40 นาที','20–35 นาที','24–26 นาที','30–40 นาที','20–35 นาที'];
 const daySections=['kettlebell','dumbbell','cardio','kettlebell','dumbbell','cardio','safety'];
 const sections=[...document.querySelectorAll('main > section')];
 const rows=[...document.querySelectorAll('#weekly .week-row')];
 const viewIds=new Set(sections.map(section=>section.id));
+viewIds.delete('timer');
+let currentView='home';
+let focusMode=false;
 
 function todayIndex(){return (new Date().getDay()+6)%7;}
 
@@ -21,15 +24,29 @@ function updateToday(){
  });
 }
 
-function showView(view){
+function showView(view, workout=''){
+ if(focusMode&&!el('kb-pause').disabled){
+  window.alert('กรุณาหยุดจับเวลาหรือฝึกให้เสร็จก่อนออกจากโหมดฝึก');
+  return;
+ }
+ currentView=view;
+ const strengthDay=view==='kettlebell'||view==='dumbbell';
+ focusMode=(strengthDay&&workout===view)||(view==='cardio'&&(workout==='walk'||workout==='tabata'));
  try{
   const url=new URL(window.location.href);
   if(view==='home')url.searchParams.delete('view');else url.searchParams.set('view',view);
+  if(focusMode)url.searchParams.set('mode','focus');else url.searchParams.delete('mode');
+  if(focusMode&&view==='cardio')url.searchParams.set('activity',workout);else url.searchParams.delete('activity');
   window.history.replaceState(null,'',url.href);
  }catch(e){}
  const home=view==='home';
- sections.forEach(section=>{section.hidden=home?section.id!=='weekly':section.id!==view;});
+ const visibleView=home?'weekly':focusMode?'timer':view;
+ sections.forEach(section=>{section.hidden=section.id!==visibleView;});
  document.body.classList.toggle('view-active',!home);
+ document.body.classList.toggle('focus-active',focusMode);
+ el('kb-focus-toggle').hidden=!strengthDay&&!focusMode;
+ el('kb-focus-toggle').textContent=focusMode?'ดูรายละเอียดท่า':'เริ่มโหมดฝึก';
+ if(focusMode)document.dispatchEvent(new CustomEvent('guide-workout',{detail:workout}));
  el('home-links').hidden=!home;
  el('day-controls').hidden=home;
  if(home)updateToday();
@@ -40,9 +57,15 @@ function openDay(index){showView(daySections[index]);window.scrollTo({top:0,beha
 el('today-button').addEventListener('click',()=>openDay(todayIndex()));
 rows.forEach((link,index)=>link.addEventListener('click',event=>{event.preventDefault();openDay(index);}));
 el('back-to-week').addEventListener('click',()=>showView('home'));
+el('kb-focus-toggle').addEventListener('click',()=>showView(currentView,focusMode?'':currentView));
+document.querySelectorAll('[data-workout]').forEach(button=>{
+ button.addEventListener('click',()=>showView('cardio',button.dataset.workout));
+});
 document.querySelectorAll('[data-info]').forEach(button=>button.addEventListener('click',()=>showView(button.dataset.info)));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateToday();});
 
-const savedView=new URLSearchParams(window.location.search).get('view')||'home';
-showView(viewIds.has(savedView)?savedView:'home');
+const params=new URLSearchParams(window.location.search);
+const savedView=params.get('view');
+const savedWorkout=savedView==='cardio'?params.get('activity'):savedView;
+showView(viewIds.has(savedView)?savedView:'home',params.get('mode')==='focus'?savedWorkout:'');
 })();
