@@ -3,10 +3,7 @@
 
 const el=id=>document.getElementById(id);
 const controls={start:el('kb-start'),pause:el('kb-pause'),reset:el('kb-reset'),rounds:el('guide-rounds')};
-const strength={
- kettlebell:[['kb-1',2],['kb-2',2],['kb-3',2,true],['kb-4',2,true]],
- dumbbell:[['db-1',3],['db-2',3,true],['db-3',2],['db-4',2],['db-5',2]]
-};
+const strength=[['db-1',2],['db-2',2],['db-3',2,true],['db-4',2],['db-5',2]];
 let workout='',stages=[],index=0,remaining=0,running=false,completed=false;
 let deadline=0,interval=null,audio=null,lastSecond=null,pauseReason='',displayedCard=null;
 
@@ -29,7 +26,7 @@ function buildStages(){
   }
   return queue;
  }
- const exercises=strength[workout];
+ const exercises=strength;
  const queue=[{label:'เตรียมตัว',duration:10,card:exercises[0][0]}];
  exercises.forEach(([card,sets,twoSides],position)=>{
   for(let set=1;set<=sets;set++){

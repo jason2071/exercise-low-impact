@@ -1,9 +1,9 @@
 (function(){'use strict';
 const el=id=>document.getElementById(id);
 const todayNames=['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
-const activities=['พักฟื้น','Kettlebell','Dumbbell','Cardio','Kettlebell','Dumbbell','Cardio'];
-const durations=['พัก','24–26 นาที','30–40 นาที','20–35 นาที','24–26 นาที','30–40 นาที','20–35 นาที'];
-const daySections=['kettlebell','dumbbell','cardio','kettlebell','dumbbell','cardio','safety'];
+const activities=['พักฟื้น','เวททั้งตัว','พักฟื้น','เดินลู่','เวททั้งตัว','พักฟื้น','เดินลู่'];
+const durations=['พัก','26–28 นาที','พัก','25–35 นาที','26–28 นาที','พัก','25–35 นาที'];
+const daySections=['dumbbell','recovery','cardio','dumbbell','recovery','cardio','recovery'];
 const sections=[...document.querySelectorAll('main > section')];
 const rows=[...document.querySelectorAll('#weekly .week-row')];
 const viewIds=new Set(sections.map(section=>section.id));
@@ -30,7 +30,7 @@ function showView(view, workout=''){
   return;
  }
  currentView=view;
- const strengthDay=view==='kettlebell'||view==='dumbbell';
+ const strengthDay=view==='dumbbell';
  focusMode=(strengthDay&&workout===view)||(view==='cardio'&&(workout==='walk'||workout==='tabata'));
  try{
   const url=new URL(window.location.href);
@@ -65,7 +65,8 @@ document.querySelectorAll('[data-info]').forEach(button=>button.addEventListener
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateToday();});
 
 const params=new URLSearchParams(window.location.search);
-const savedView=params.get('view');
+const viewParam=params.get('view');
+const savedView=viewParam==='kettlebell'?'dumbbell':viewParam;
 const savedWorkout=savedView==='cardio'?params.get('activity'):savedView;
 showView(viewIds.has(savedView)?savedView:'home',params.get('mode')==='focus'?savedWorkout:'');
 })();
